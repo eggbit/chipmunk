@@ -10,64 +10,106 @@ chipmunk_run(struct chip8 *c8) {
     // memory[pc] == ac
     // memory[pc + 1] == 3f
     // memory[pc] << 8 == ac00 (logical or'd with) memory[pc + 1] == ac3f
-
     u16 opcode = c8->memory[c8->pc] << 8 | c8->memory[c8->pc + 1];
 
     // NOTE: Debug
-    // printf("pc: %x - opcode: %x (%x)\n", c8->pc, opcode, (opcode & 0xf000) >> 12);
+    // printf("pc: %x - op: %x\n", c8->pc, opcode);
 
     // TODO: Handle opcodes
-    switch ((opcode & 0xf000) >> 12) {
+    switch((opcode & 0xf000) >> 12) {
         case 0x0:
-            // TODO: 0NNN, 00E0, 00EE
+            switch(opcode & 0x00ff) {
+                // TODO: 00E0
+                case 0x00e0:
+                break;
+
+                case 0x00ee:
+                    c8->pc = c8->stack[c8->sp];
+                    c8->sp--;
+                break;
+
+                // TODO: 0NNN
+                default:
+                break;
+            }
         break;
 
         case 0x1:
-            // TODO: 1NNN
+            c8->pc = (opcode & 0x0fff);
+            return;
         break;
 
         case 0x2:
-            // TODO: 2NNN
+            c8->sp++;
+            c8->stack[c8->sp] = c8->pc;
+            c8->pc = (opcode & 0x0fff);
+            return;
         break;
 
-        case 0x3:
-            // TODO: 3XNN
+        case 0x3: {
+            u8 reg = (opcode & 0x0f00) >> 8;
+            u16 val = (opcode & 0x00ff);
+
+            if(c8->v[reg] == val) c8->pc += 2;
+        }
         break;
 
-        case 0x4:
-            // TODO: 4XNN
+        case 0x4: {
+            u8 reg = (opcode & 0x0f00) >> 8;
+            u16 val = (opcode & 0x00ff);
+
+            if(c8->v[reg] != val) c8->pc += 2;
+        }
         break;
 
-        case 0x5:
-            // TODO: 5XY0
+        case 0x5: {
+            u8 x = (opcode & 0x0f00) >> 8;
+            u8 y = (opcode & 0x00f0) >> 4;
+
+            if(c8->v[x] == c8->v[y]) c8->pc += 2;
+        }
         break;
 
-        case 0x6:
-            // TODO: 6XNN
+        case 0x6: {
+            u8 reg = (opcode & 0x0f00) >> 8;
+            u16 val = (opcode & 0x00ff);
+
+            c8->v[reg] = val;
+        }
         break;
 
-        case 0x7:
-            // TODO: 7XNN
+        case 0x7: {
+            u8 reg = (opcode & 0x0f00) >> 8;
+            u16 val = (opcode & 0x00ff);
+
+            c8->v[reg] += val;
+        }
         break;
 
         case 0x8:
             // TODO: 8XY0, 8XY1, 8XY2, 8XY3, 8XY4, 8XY5, 8XY6, 8XY7, 8XYE
         break;
 
-        case 0x9:
-            // TODO: 9XY0
+        case 0x9: {
+            u8 x = (opcode & 0x0f00) >> 8;
+            u8 y = (opcode & 0x00f0) >> 4;
+
+            if(c8->v[x] != c8->v[y]) c8->pc += 2;
+        }
         break;
 
         case 0xa:
-            // TODO: ANNN
+            c8->i = (opcode & 0x0fff);
         break;
 
         case 0xb:
-            // TODO: BNNN
+            c8->pc = (opcode & 0x0fff) + c8->v[0];
         break;
 
-        case 0xc:
-            // TODO: CXNN
+        case 0xc: {
+            u8 reg = (opcode & 0x0f00) >> 8;
+            c8->v[reg] = (rand() % 256) & (opcode & 0x00ff);
+        }
         break;
 
         case 0xd:
@@ -78,8 +120,53 @@ chipmunk_run(struct chip8 *c8) {
             // TODO: EX9E, EXA1
         break;
 
-        case 0xf:
-            // TODO: FX07, FX0A, FX15, FX18, FX19, FX29, FX33, FX55, FX65
+        case 0xf: {
+            u8 x = (opcode & 0x0f00) >> 8;
+
+            switch(opcode & 0x00ff) {
+                case 0x07:
+                    c8->v[x] = c8->d_timer;
+                break;
+
+                case 0x0a:
+                    // TODO: FX0A
+                break;
+
+                case 0x15:
+                    c8->d_timer = c8->v[x];
+                break;
+
+                case 0x18:
+                    c8->s_timer = c8->v[x];
+                break;
+
+                case 0x1e:
+                    c8->i += c8->v[x];
+                break;
+
+                case 0x29:
+                    // TODO: FX29
+                break;
+
+                case 0x33: {
+                    u8 dec = c8->v[x];
+                    c8->memory[c8->i] = dec / 100;
+                    c8->memory[c8->i + 1] = dec % 100 / 10;
+                    c8->memory[c8->i + 2] = dec % 10;
+                }
+                break;
+
+                case 0x55:
+                    for(int i = 0; i <= x; i++)
+                        c8->memory[c8->i + i] = c8->v[i];
+                break;
+
+                case 0x65:
+                    for(int i = 0; i <= x; i++)
+                        c8->v[i] = c8->memory[c8->i + i];
+                break;
+            }
+        }
         break;
 
         default:
