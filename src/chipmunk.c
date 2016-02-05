@@ -13,14 +13,14 @@ chipmunk_run(struct chip8 *c8) {
     u16 opcode = c8->memory[c8->pc] << 8 | c8->memory[c8->pc + 1];
 
     // NOTE: Debug
-    // printf("pc: %x - op: %x\n", c8->pc, opcode);
+    printf("pc: %x - op: %x\n", c8->pc, opcode);
 
     // TODO: Handle opcodes
     switch((opcode & 0xf000) >> 12) {
         case 0x0:
             switch(opcode & 0x00ff) {
-                // TODO: 00E0
                 case 0x00e0:
+                    memset(c8->display, 0, sizeof(c8->display));
                 break;
 
                 case 0x00ee:
@@ -86,8 +86,53 @@ chipmunk_run(struct chip8 *c8) {
         }
         break;
 
-        case 0x8:
-            // TODO: 8XY0, 8XY1, 8XY2, 8XY3, 8XY4, 8XY5, 8XY6, 8XY7, 8XYE
+        case 0x8: {
+            u8 x = (opcode & 0x0f00) >> 8;
+            u8 y = (opcode & 0x00f0) >> 4;
+
+            switch(opcode & 0x000f) {
+                case 0x0:
+                    c8->v[x] = c8->v[y];
+                break;
+
+                case 0x1:
+                    c8->v[x] |= c8->v[y];
+                break;
+
+                case 0x2:
+                    c8->v[x] &= c8->v[y];
+                break;
+
+                case 0x3:
+                    c8->v[x] ^= c8->v[y];
+                break;
+
+                case 0x4:
+                    c8->v[0xf] = (c8->v[x] + c8->v[y] > 255 ? 1 : 0);
+                    c8->v[x] += c8->v[y];
+                break;
+
+                case 0x5:
+                    c8->v[0xf] = (c8->v[x] > c8->v[y] ? 1 : 0);
+                    c8->v[x] -= c8->v[y];
+                break;
+
+                case 0x6:
+                    c8->v[0xf] = (c8->v[x] & 1 ? 1 : 0);
+                    c8->v[x] /= 2;
+                break;
+
+                case 0x7:
+                    c8->v[0xf] = (c8->v[y] > c8->v[x] ? 1 : 0);
+                    c8->v[x] = c8->v[y] - c8->v[x];
+                break;
+
+                case 0xe:
+                    c8->v[0xf] = (c8->v[x] & 1 << 7 ? 1 : 0);
+                    c8->v[x] *= 2;
+                break;
+            }
+        }
         break;
 
         case 0x9: {
@@ -172,6 +217,14 @@ chipmunk_run(struct chip8 *c8) {
         default:
             printf("%x: Unknown opcode\n", opcode);
         break;
+    }
+
+    // NOTE: Update timers.
+    if(c8->d_timer > 0) c8->d_timer--;
+
+    if(c8->s_timer > 0) {
+        if(c8->s_timer == 1) c8->beep = true;
+        c8->s_timer--;
     }
 
     // NOTE: Move to next instruction.

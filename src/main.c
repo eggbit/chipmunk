@@ -26,8 +26,13 @@ main(int argc, char const *argv[]) {
 
         chipmunk_run(&c8);
 
+        if(c8.beep) {
+            puts("BEEP");
+            c8.beep = false;
+        }
+
         // TODO: Draw frame every 16.6ms
-        usleep(250 * 1000);
+        usleep(50 * 1000);
     }
 
 escape:
