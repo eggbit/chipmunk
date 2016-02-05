@@ -5,6 +5,7 @@ static void chipmunk_load_font(struct chip8 *c8);
 
 bool
 chipmunk_init(struct chip8 *c8, const char *rom_path) {
+    c8->pc = 0x200;
     chipmunk_load_font(c8);
 
     if(!chipmunk_load_rom(c8, rom_path)) {
