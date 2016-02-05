@@ -1,5 +1,6 @@
 #include "chipdef.h"
 #include "chipmunk.h"
+#include <unistd.h> // for sleep.
 
 int
 main(int argc, char const *argv[]) {
@@ -14,7 +15,9 @@ main(int argc, char const *argv[]) {
 
     for(;;) {
         chipmunk_run(&c8);
+
         // TODO: Draw frame every 16.6ms
+        sleep(1);
     }
 
     return 0;
