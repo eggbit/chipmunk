@@ -12,6 +12,10 @@ chipmunk_run(struct chip8 *c8) {
     // memory[pc] << 8 == ac00 (logical or'd with) memory[pc + 1] == ac3f
     u16 opcode = c8->memory[c8->pc] << 8 | c8->memory[c8->pc + 1];
 
+    // Get potential VX and VY values.
+    u8 op_x = (opcode & 0x0f00) >> 8;
+    u8 op_y = (opcode & 0x00f0) >> 4;
+
     // NOTE: Debug
     printf("pc: %x - op: %x\n", c8->pc, opcode);
 
@@ -46,101 +50,75 @@ chipmunk_run(struct chip8 *c8) {
             return;
         break;
 
-        case 0x3: {
-            u8 reg = (opcode & 0x0f00) >> 8;
-            u16 val = (opcode & 0x00ff);
-
-            if(c8->v[reg] == val) c8->pc += 2;
-        }
+        case 0x3:
+            if(c8->v[op_x] == (opcode & 0x00ff)) c8->pc += 2;
         break;
 
-        case 0x4: {
-            u8 reg = (opcode & 0x0f00) >> 8;
-            u16 val = (opcode & 0x00ff);
-
-            if(c8->v[reg] != val) c8->pc += 2;
-        }
+        case 0x4:
+            if(c8->v[op_x] != (opcode & 0x00ff)) c8->pc += 2;
         break;
 
         case 0x5: {
-            u8 x = (opcode & 0x0f00) >> 8;
-            u8 y = (opcode & 0x00f0) >> 4;
-
-            if(c8->v[x] == c8->v[y]) c8->pc += 2;
+            if(c8->v[op_x] == c8->v[op_y]) c8->pc += 2;
         }
         break;
 
-        case 0x6: {
-            u8 reg = (opcode & 0x0f00) >> 8;
-            u16 val = (opcode & 0x00ff);
-
-            c8->v[reg] = val;
-        }
+        case 0x6:
+            c8->v[op_x] = (opcode & 0x00ff);
         break;
 
-        case 0x7: {
-            u8 reg = (opcode & 0x0f00) >> 8;
-            u16 val = (opcode & 0x00ff);
-
-            c8->v[reg] += val;
-        }
+        case 0x7:
+            c8->v[op_x] += (opcode & 0x00ff);
         break;
 
         case 0x8: {
-            u8 x = (opcode & 0x0f00) >> 8;
-            u8 y = (opcode & 0x00f0) >> 4;
-
             switch(opcode & 0x000f) {
                 case 0x0:
-                    c8->v[x] = c8->v[y];
+                    c8->v[op_x] = c8->v[op_y];
                 break;
 
                 case 0x1:
-                    c8->v[x] |= c8->v[y];
+                    c8->v[op_x] |= c8->v[op_y];
                 break;
 
                 case 0x2:
-                    c8->v[x] &= c8->v[y];
+                    c8->v[op_x] &= c8->v[op_y];
                 break;
 
                 case 0x3:
-                    c8->v[x] ^= c8->v[y];
+                    c8->v[op_x] ^= c8->v[op_y];
                 break;
 
                 case 0x4:
-                    c8->v[0xf] = (c8->v[x] + c8->v[y] > 255 ? 1 : 0);
-                    c8->v[x] += c8->v[y];
+                    c8->v[0xf] = (c8->v[op_x] + c8->v[op_y] > 255 ? 1 : 0);
+                    c8->v[op_x] += c8->v[op_y];
                 break;
 
                 case 0x5:
-                    c8->v[0xf] = (c8->v[x] > c8->v[y] ? 1 : 0);
-                    c8->v[x] -= c8->v[y];
+                    c8->v[0xf] = (c8->v[op_x] > c8->v[op_y] ? 1 : 0);
+                    c8->v[op_x] -= c8->v[op_y];
                 break;
 
                 case 0x6:
-                    c8->v[0xf] = (c8->v[x] & 1 ? 1 : 0);
-                    c8->v[x] /= 2;
+                    c8->v[0xf] = (c8->v[op_x] & 1 ? 1 : 0);
+                    c8->v[op_x] /= 2;
                 break;
 
                 case 0x7:
-                    c8->v[0xf] = (c8->v[y] > c8->v[x] ? 1 : 0);
-                    c8->v[x] = c8->v[y] - c8->v[x];
+                    c8->v[0xf] = (c8->v[op_y] > c8->v[op_x] ? 1 : 0);
+                    c8->v[op_x] = c8->v[op_y] - c8->v[op_x];
                 break;
 
                 case 0xe:
-                    c8->v[0xf] = (c8->v[x] & 1 << 7 ? 1 : 0);
-                    c8->v[x] *= 2;
+                    c8->v[0xf] = (c8->v[op_x] & 1 << 7 ? 1 : 0);
+                    c8->v[op_x] *= 2;
                 break;
             }
         }
         break;
 
-        case 0x9: {
-            u8 x = (opcode & 0x0f00) >> 8;
-            u8 y = (opcode & 0x00f0) >> 4;
-
-            if(c8->v[x] != c8->v[y]) c8->pc += 2;
-        }
+        case 0x9:
+            if(c8->v[op_x] != c8->v[op_y]) c8->pc += 2;
         break;
 
         case 0xa:
@@ -151,10 +129,8 @@ chipmunk_run(struct chip8 *c8) {
             c8->pc = (opcode & 0x0fff) + c8->v[0];
         break;
 
-        case 0xc: {
-            u8 reg = (opcode & 0x0f00) >> 8;
-            c8->v[reg] = (rand() % 256) & (opcode & 0x00ff);
-        }
+        case 0xc:
+            c8->v[op_x] = (rand() % 256) & (opcode & 0x00ff);
         break;
 
         case 0xd:
@@ -166,11 +142,9 @@ chipmunk_run(struct chip8 *c8) {
         break;
 
         case 0xf: {
-            u8 x = (opcode & 0x0f00) >> 8;
-
             switch(opcode & 0x00ff) {
                 case 0x07:
-                    c8->v[x] = c8->d_timer;
+                    c8->v[op_x] = c8->d_timer;
                 break;
 
                 case 0x0a:
@@ -178,15 +152,15 @@ chipmunk_run(struct chip8 *c8) {
                 break;
 
                 case 0x15:
-                    c8->d_timer = c8->v[x];
+                    c8->d_timer = c8->v[op_x];
                 break;
 
                 case 0x18:
-                    c8->s_timer = c8->v[x];
+                    c8->s_timer = c8->v[op_x];
                 break;
 
                 case 0x1e:
-                    c8->i += c8->v[x];
+                    c8->i += c8->v[op_x];
                 break;
 
                 case 0x29:
@@ -194,7 +168,7 @@ chipmunk_run(struct chip8 *c8) {
                 break;
 
                 case 0x33: {
-                    u8 dec = c8->v[x];
+                    u8 dec = c8->v[op_x];
                     c8->memory[c8->i] = dec / 100;
                     c8->memory[c8->i + 1] = dec % 100 / 10;
                     c8->memory[c8->i + 2] = dec % 10;
@@ -202,12 +176,12 @@ chipmunk_run(struct chip8 *c8) {
                 break;
 
                 case 0x55:
-                    for(int i = 0; i <= x; i++)
+                    for(int i = 0; i <= op_x; i++)
                         c8->memory[c8->i + i] = c8->v[i];
                 break;
 
                 case 0x65:
-                    for(int i = 0; i <= x; i++)
+                    for(int i = 0; i <= op_x; i++)
                         c8->v[i] = c8->memory[c8->i + i];
                 break;
             }
