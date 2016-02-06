@@ -14,4 +14,4 @@ struct chip8 {
 };
 
 bool chipmunk_init(struct chip8 *c8, const char *rom_path);
-void chipmunk_run(struct chip8 *c8);
+void chipmunk_run(struct chip8 *c8, u32 cycles);

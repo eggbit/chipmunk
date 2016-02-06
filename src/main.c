@@ -1,6 +1,17 @@
 #include "chipdef.h"
 #include "chipmunk.h"
-#include <unistd.h> // for sleep.
+
+double
+sys_float_time(u64 *time_counter, double seconds_per_tick) {
+    static double time_passed = 0;
+
+    u64 counter = SDL_GetPerformanceCounter();
+    u64 interval = counter - *time_counter;
+
+    *time_counter = counter;
+
+    return time_passed += (double)interval * seconds_per_tick;
+}
 
 int
 main(int argc, char const *argv[]) {
@@ -16,6 +27,12 @@ main(int argc, char const *argv[]) {
 
     if(!sdl_init("chipmunk", 64 * 4, 32 * 4, &w, &r)) goto escape;
 
+    // Set up timers and frame rate
+    double seconds_per_tick = 1.0 / (double)SDL_GetPerformanceFrequency();
+    double newtime = 0.0, oldtime = 0.0, time_accumulated = 0.0;
+    double target_fps = 1.0 / 60.0;
+    u64 time_count = SDL_GetPerformanceCounter();
+
     for(;;) {
         SDL_Event event;
         sdl_pump_events();
@@ -24,15 +41,20 @@ main(int argc, char const *argv[]) {
 
         sdl_flush_events();
 
-        chipmunk_run(&c8);
+        chipmunk_run(&c8, 500);
 
-        if(c8.beep) {
-            puts("BEEP");
-            c8.beep = false;
+        newtime = sys_float_time(&time_count, seconds_per_tick);
+        time_accumulated += newtime - oldtime;
+        oldtime = newtime;
+
+        if(time_accumulated > target_fps) {
+            if(c8.beep) {
+                puts("BEEP");
+                c8.beep = false;
+            }
+            
+            time_accumulated -= target_fps;
         }
-
-        // TODO: Draw frame every 16.6ms
-        usleep(50 * 1000);
     }
 
 escape:

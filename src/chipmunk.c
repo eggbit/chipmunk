@@ -1,10 +1,14 @@
 #include "chipmunk.h"
+#include <unistd.h> // for sleep.
 
 static bool chipmunk_load_rom(struct chip8 *c8, const char *rom_path);
 static void chipmunk_load_font(struct chip8 *c8);
 
 void
-chipmunk_run(struct chip8 *c8) {
+chipmunk_run(struct chip8 *c8, u32 cycles) {
+    // Timing
+    float seconds_per_cycle = 60.0f / cycles;
+
     // Opcode to get == ac3f
     //
     // memory[pc] == ac
@@ -17,7 +21,7 @@ chipmunk_run(struct chip8 *c8) {
     u8 op_y = (opcode & 0x00f0) >> 4;
 
     // NOTE: Debug
-    printf("pc: %x - op: %x\n", c8->pc, opcode);
+    // printf("pc: %x - op: %x\n", c8->pc, opcode);
 
     // TODO: Handle opcodes
     switch((opcode & 0xf000) >> 12) {
@@ -165,6 +169,7 @@ chipmunk_run(struct chip8 *c8) {
 
                 case 0x29:
                     // TODO: FX29
+                    c8->i = c8->memory[c8->v[op_x]];
                 break;
 
                 case 0x33: {
@@ -203,6 +208,7 @@ chipmunk_run(struct chip8 *c8) {
 
     // NOTE: Move to next instruction.
     c8->pc += 2;
+    usleep(seconds_per_cycle / 60 * 1000000);
 }
 
 bool
