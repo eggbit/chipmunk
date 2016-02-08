@@ -29,6 +29,7 @@ chipmunk_run(struct chip8 *c8, u32 cycles) {
             switch(opcode & 0x00ff) {
                 case 0x00e0:
                     memset(c8->display, 0, sizeof(c8->display));
+                    puts("display clear.");
                 break;
 
                 case 0x00ee:
@@ -134,11 +135,18 @@ chipmunk_run(struct chip8 *c8, u32 cycles) {
         break;
 
         case 0xc:
-            c8->v[op_x] = (rand() % 256) & (opcode & 0x00ff);
+            c8->v[op_x] = (rand() % 255) & (opcode & 0x00ff);
         break;
 
-        case 0xd:
-            // TODO: DXYN
+        case 0xd: {
+            u8 bytes_to_read = (opcode & 0x000f);
+            u8 bytes_read = 0;
+            for(u8 i = 0; i < bytes_to_read; i++) {
+                bytes_read = c8->memory[c8->i];
+            }
+
+            c8->display[c8->v[op_x] * c8->v[op_y]] ^= bytes_read;
+        }
         break;
 
         case 0xe:
