@@ -135,17 +135,25 @@ chipmunk_run(struct chip8 *c8, u32 cycles) {
         break;
 
         case 0xc:
-            c8->v[op_x] = (rand() % 255) & (opcode & 0x00ff);
+            c8->v[op_x] = (rand() % 254) & (opcode & 0x00ff);
         break;
 
         case 0xd: {
-            u8 bytes_to_read = (opcode & 0x000f);
-            u8 bytes_read = 0;
-            for(u8 i = 0; i < bytes_to_read; i++) {
-                bytes_read = c8->memory[c8->i];
-            }
+            // NOTE: http://chip8.wikia.com/wiki/Instruction_Draw
+            // NOTE: http://stackoverflow.com/questions/17568851/understanding-a-piece-of-code-in-chip8-emulator
+            u8 height = (opcode & 0x000f);
+            u8 x_pos = c8->v[op_x];
+            u8 y_pos = c8->v[op_y];
+            c8->v[0xf] = 0;
 
-            c8->display[c8->v[op_x] * c8->v[op_y]] ^= bytes_read;
+            for(u32 i = 0; i < 8; i++) {
+                u16 data = c8->memory[c8->i + i];
+
+                for(u32 j = 0; j < height; j++) {
+                    if(data & (0x80 >> j))
+                        c8->display[x_pos + i + (y_pos + j) * 64] ^= 1;
+                }
+            }
         }
         break;
 

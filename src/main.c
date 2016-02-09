@@ -48,7 +48,7 @@ main(int argc, char const *argv[]) {
         sdl_flush_events();
 
         // NOTE: Run the emulator.
-        chipmunk_run(&c8, 500);
+        chipmunk_run(&c8, 2000);
 
         // NOTE: Timing update
         newtime = sys_float_time(&time_count, seconds_per_tick);
